@@ -6,76 +6,42 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push API image
+      - name: Build API image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest ./api
-          docker push ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest
+          # docker build -t ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest ./api
+          # docker push ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest
+          docker build -t data-processor-api:local ./api
 
-      - name: Build and push Worker image
+      - name: Build Worker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest ./worker
-          docker push ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest
+          # docker build -t ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest ./worker
+          # docker push ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest
+          docker build -t data-processor-worker:local ./worker
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      # Optional: Add AWS credentials sequence here and run `terraform apply -auto-approve` 
-      # so the infrastructure provisions automatically before code deployment!
-
-      - name: Deploy via SSH to VM
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Pull the latest containers built in the previous job
-            docker pull ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest
-            docker pull ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest
-            
-            # Generate the production docker-compose.yml locally on the server
-            echo "
-            version: '3.8'
-            services:
-              redis:
-                image: redis:alpine
-                ports:
-                  - '6379:6379'
-                restart: always
-              api:
-                image: ${{ secrets.DOCKER_USERNAME }}/data-processor-api:latest
-                ports:
-                  - '8000:8000'
-                environment:
-                  - REDIS_HOST=redis
-                depends_on:
-                  - redis
-                restart: always
-              worker:
-                image: ${{ secrets.DOCKER_USERNAME }}/data-processor-worker:latest
-                environment:
-                  - REDIS_HOST=redis
-                depends_on:
-                  - redis
-                restart: always
-            " > docker-compose.yml
-            
-            # Turn down old containers, remove orphans, and start the new ones detached
-            docker compose down --remove-orphans
-            docker compose up -d
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+  #
+  #     - name: Deploy via SSH to VM
+  #       uses: appleboy/ssh-action@v0.1.10
+  #       with:
+  #         host: ${{ secrets.SERVER_IP }}
+  #         username: ubuntu
+  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         script: |
+  #           ... deployment script commented out until secrets are added ...
