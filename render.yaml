@@ -1,0 +1,34 @@
+services:
+  # The API Web Service
+  - type: web
+    name: data-processor-api
+    env: docker
+    dockerContext: ./api
+    dockerfilePath: ./api/Dockerfile
+    plan: free
+    envVars:
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: data-processor-redis
+          property: host
+
+  # The Background Worker
+  - type: worker
+    name: data-processor-worker
+    env: docker
+    dockerContext: ./worker
+    dockerfilePath: ./worker/Dockerfile
+    plan: free
+    envVars:
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: data-processor-redis
+          property: host
+
+  # The Redis Queue
+  - type: redis
+    name: data-processor-redis
+    ipAllowList: [] # Strict internal access only
+    plan: free
